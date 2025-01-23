@@ -1,0 +1,17 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="pieces">
+        <file alias="bBishop">pieces/bBishop.png</file>
+        <file alias="bKing">pieces/bKing.png</file>
+        <file alias="bKnight">pieces/bKnight.png</file>
+        <file alias="bPawn">pieces/bPawn.png</file>
+        <file alias="bQueen">pieces/bQueen.png</file>
+        <file alias="bRook">pieces/bRook.png</file>
+        <file alias="wBishop">pieces/wBishop.png</file>
+        <file alias="wKing">pieces/wKing.png</file>
+        <file alias="wKnight">pieces/wKnight.png</file>
+        <file alias="wPawn">pieces/wPawn.png</file>
+        <file alias="wQueen">pieces/wQueen.png</file>
+        <file alias="wRook">pieces/wRook.png</file>
+    </qresource>
+</RCC>
