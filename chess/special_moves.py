@@ -88,7 +88,7 @@ class Castle:
 
 class EnPassant:
 
-    canTakeEnPassant = []
+    canTakeEnPassant: list = []
     take = None
     move = None
     resetOnWhiteTurn = False

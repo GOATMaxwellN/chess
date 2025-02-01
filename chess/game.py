@@ -1,44 +1,55 @@
 from PySide6.QtWidgets import (QWidget, QHBoxLayout, QFrame, QLabel,
                                QGridLayout, QVBoxLayout)
+from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
 from board import BoardView, Square
 from interface import BoardToGameInterface
-from pieces import *
+import pieces
 from squares import Squares
-from special_moves import Castle
+from special_moves import Castle, EnPassant
 import logger
+from logging import getLogger
+
+stdlogger = getLogger(__name__)
 
 class ChessGame(QWidget):
     
-    def __init__(self):
+    def __init__(
+            self,
+            light_square_color: QColor,
+            dark_square_color: QColor
+            ):
         super().__init__()
 
         BoardToGameInterface.setCurrentGame(self)
 
         # Widgets
-        self.board = BoardView()
+        self.board = BoardView(
+            light_color=light_square_color,
+            dark_color=dark_square_color
+        )
         self.gameInfo = GameInfo()
         
         # Game variables
         self.turn = 0
         self.whiteTurn = True
-        self.selectedPiece = None
+        self.selectedPiece: pieces.Piece | None = None
         self.selectedSquare = None  # square of the selected piece
         self.wKing = None
         self.bKing = None
 
         # Make a board state
-        self.squares = [[], [], [], [], [], [], [], []]
+        self.squares: list[list[GameSquare]] = [[], [], [], [], [], [], [], []]
         Squares.setSquares(self.squares)
-        self.pieces = []
+        self.pieces: list = []
         self.initializeBoardState()
 
-        self.layout = QHBoxLayout()
-        self.layout.setContentsMargins(0,0,0,0)
-        self.layout.setSpacing(0)
-        self.layout.addWidget(self.board, stretch=3)
-        self.layout.addWidget(self.gameInfo, stretch=1)
-        self.setLayout(self.layout)
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0,0,0,0)
+        layout.setSpacing(0)
+        layout.addWidget(self.board, stretch=3)
+        layout.addWidget(self.gameInfo, stretch=1)
+        self.setLayout(layout)
 
     def initializeBoardState(self):
         """Initializes the board state by creating all the squares
@@ -46,45 +57,45 @@ class ChessGame(QWidget):
         for i in range(8):
             for j in range(8):
                 sqName = self.coordToSquareName((i, j))
-                self.squares[i].append(Square((i, j), sqName))
+                self.squares[i].append(GameSquare((i, j), sqName))
 
         for i in range(8):
             # Piece instances save themselves as an attribute to
             # the passed in 'square' using square.setPiece(self).
 
             # Add pawns
-            p1 = Pawn(isWhite=True, square=self.squares[i][1])
-            p2 = Pawn(isWhite=False, square=self.squares[i][6])
+            p1 = pieces.Pawn(isWhite=True, square=self.squares[i][1])
+            p2 = pieces.Pawn(isWhite=False, square=self.squares[i][6])
             self.pieces.extend((p1, p2))
 
             # Add rooks
             if i == 0 or i == 7:  # i=0 is the a file and i=7 is the h file
-                p1 = Rook(isWhite=True, square=self.squares[i][0])
-                p2 = Rook(isWhite=False, square=self.squares[i][7])
+                p1 = pieces.Rook(isWhite=True, square=self.squares[i][0])
+                p2 = pieces.Rook(isWhite=False, square=self.squares[i][7])
                 self.pieces.extend((p1, p2))
 
             # Add knights
             if i == 1 or i == 6:
-                p1 = Knight(isWhite=True, square=self.squares[i][0])
-                p2 = Knight(isWhite=False, square=self.squares[i][7])
+                p1 = pieces.Knight(isWhite=True, square=self.squares[i][0])
+                p2 = pieces.Knight(isWhite=False, square=self.squares[i][7])
                 self.pieces.extend((p1, p2))
 
             # Add bishops
             if i == 2 or i == 5:
-                p1 = Bishop(isWhite=True, square=self.squares[i][0])
-                p2 = Bishop(isWhite=False, square=self.squares[i][7])
+                p1 = pieces.Bishop(isWhite=True, square=self.squares[i][0])
+                p2 = pieces.Bishop(isWhite=False, square=self.squares[i][7])
                 self.pieces.extend((p1, p2))
 
             # Add queens
             if i == 3:
-                p1 = Queen(isWhite=True, square=self.squares[i][0])
-                p2 = Queen(isWhite=False, square=self.squares[i][7])
+                p1 = pieces.Queen(isWhite=True, square=self.squares[i][0])
+                p2 = pieces.Queen(isWhite=False, square=self.squares[i][7])
                 self.pieces.extend((p1, p2))
 
             # Add kings
             if i == 4:
-                self.wKing = King(isWhite=True, square=self.squares[i][0])
-                self.bKing = King(isWhite=False, square=self.squares[i][7])
+                self.wKing = pieces.King(isWhite=True, square=self.squares[i][0])
+                self.bKing = pieces.King(isWhite=False, square=self.squares[i][7])
                 self.pieces.extend((self.wKing, self.bKing))
 
         for piece in self.pieces:
@@ -118,19 +129,19 @@ class ChessGame(QWidget):
             isWhite = False
         
         if promotedTo[1:] == "Queen":
-            newPiece = Queen(
+            newPiece = pieces.Queen(
                 isWhite=isWhite, square=self.promotionSquares[1], promotion=True
             )
         elif promotedTo[1:] == "Rook":
-            newPiece = Rook(
+            newPiece = pieces.Rook(
                 isWhite=isWhite, square=self.promotionSquares[1], promotion=True
             )
         elif promotedTo[1:] == "Knight":
-            newPiece = Knight(
+            newPiece = pieces.Knight(
                 isWhite=isWhite, square=self.promotionSquares[1], promotion=True
             )
         elif promotedTo[1:] == "Bishop":
-            newPiece = Bishop(
+            newPiece = pieces.Bishop(
                 isWhite=isWhite, square=self.promotionSquares[1], promotion=True
             )
 
@@ -151,18 +162,22 @@ class ChessGame(QWidget):
         self.promotionSquares = None
 
 
-    def squareClicked(self, squareName):
+    def squareClicked(self, squareName: str):
         """""" 
         coord = self.squareNameToCoord(squareName)
-        sq = self.squares[coord[0]][coord[1]]
+        sq: Square = self.squares[coord[0]][coord[1]]
         piece = sq.getPiece()
+        stdlogger.debug(f"Square at {squareName} has piece {piece}")
+
 
         if sq.hasPiece():
+            stdlogger.debug(f"Square {coord} has piece.")
             # If there is a selected piece, and this square has an enemy piece,
             # check if it can move to this square and capture.
             if (self.selectedPiece is not None
                     and self.selectedPiece.isOppositeColorAs(piece)
-                    and self.selectedPiece.canMoveTo(sq)):
+                    and self.selectedPiece.canMoveTo(sq)
+                ):
 
                 moveType = self.selectedPiece.setSquare(sq)
                 old_sq = self.selectedSquare
@@ -284,6 +299,7 @@ class ChessGame(QWidget):
         checkNoMate = {"check": True, "mate": False}
         checkmate = {"check": True, "mate": True}
 
+        # TODO: follow DRY
         if self.wKing.isChecked():
             # If king has no moves, check if a piece can block or capture the check
             if not self.wKing.getMoves():
@@ -300,7 +316,6 @@ class ChessGame(QWidget):
                 for piece in self.pieces:
                     if piece.isSameColorAs(self.bKing) and piece.getMoves():
                         return checkNoMate
-                
                 # Game over
                 print("White wins")
                 return checkmate
@@ -372,10 +387,10 @@ class MoveList(QFrame):
         label = QLabel("Moves")
         self.moveList, self.moveListLayout = self.createMoveList()
 
-        self.layout = QVBoxLayout()
-        self.layout.addWidget(label, stretch=1, alignment=Qt.AlignCenter)
-        self.layout.addWidget(self.moveList, stretch=9)
-        self.setLayout(self.layout)
+        layout = QVBoxLayout()
+        layout.addWidget(label, stretch=1, alignment=Qt.AlignCenter)
+        layout.addWidget(self.moveList, stretch=9)
+        self.setLayout(layout)
 
     def createMoveList(self):
         """Creates frame that will hold move history"""
@@ -400,7 +415,7 @@ class MoveList(QFrame):
             self.moveListLayout.addWidget(label, self.row, 2)
             self.row += 1
 
-class Square:
+class GameSquare:
     """A detailed representation of a square that will hold
     info about the square's state"""
 

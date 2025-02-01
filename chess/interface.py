@@ -19,6 +19,7 @@ class BoardToGameInterface:
         """Whenever a ChessGame instance is created, it calls this to
         set itself as the CURRENT_GAME"""
         cls.CURRENT_GAME = game
+        game.check
 
     @classmethod
     def isWhiteTurn(cls):
